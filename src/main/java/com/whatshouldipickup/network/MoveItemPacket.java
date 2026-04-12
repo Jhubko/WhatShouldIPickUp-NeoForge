@@ -32,28 +32,24 @@ public record MoveItemPacket(int entityId, int slot) implements CustomPacketPayl
 
         ctx.enqueueWork(() -> {
 
-            ServerPlayer player = (ServerPlayer) ctx.player();
+            if (!(ctx.player() instanceof ServerPlayer player)) return;
 
             var level = player.level();
 
             var entity = level.getEntity(msg.entityId());
-
             if (!(entity instanceof ItemEntity itemEntity)) return;
 
-            ItemStack stackFromWorld = itemEntity.getItem();
+            if (player.distanceToSqr(itemEntity) > 16) return;
 
             int slot = msg.slot();
 
-            // 🔥 HOTBAR (0–8) + INVENTORY (9–35)
             if (slot < 0 || slot >= player.getInventory().items.size()) return;
 
-            // 🔥 SWAP (KLUCZ FIX)
+            ItemStack worldStack = itemEntity.getItem().copy();
             ItemStack existing = player.getInventory().getItem(slot);
 
-            // wstaw item z ziemi
-            player.getInventory().setItem(slot, stackFromWorld.copy());
+            player.getInventory().setItem(slot, worldStack);
 
-            // zwróć poprzedni item na ziemię (swap)
             if (!existing.isEmpty()) {
                 itemEntity.setItem(existing);
             } else {
