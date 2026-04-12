@@ -1,6 +1,7 @@
 package com.whatshouldipickup.client;
 
 import com.whatshouldipickup.network.MoveItemPacket;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -17,56 +18,18 @@ public class OverlayState {
 
     private static boolean draggingScroll = false;
 
-    private static final int VISIBLE = 6;
-
-    public static void updateScroll(int size) {
-
-        int max = Math.max(0, size - VISIBLE);
-
-        if (max == 0) {
-            scrollTarget = 0;
-            scrollCurrent = 0f;
-            return;
-        }
-
-        scrollTarget = Math.max(0, Math.min(scrollTarget, max));
-
-        scrollCurrent += (scrollTarget - scrollCurrent) * 0.25f;
-
-        if (Math.abs(scrollCurrent - scrollTarget) < 0.01f) {
-            scrollCurrent = scrollTarget;
-        }
-
-        scrollCurrent = Math.max(0f, Math.min(scrollCurrent, max));
-    }
-
-    public static void handleScroll(double delta, int size) {
-
-        int max = Math.max(0, size - VISIBLE);
-
-        if (max == 0) {
-            scrollTarget = 0;
-            return;
-        }
-
-        if (delta > 0) scrollTarget--;
-        else scrollTarget++;
-
-        scrollTarget = Math.max(0, Math.min(scrollTarget, max));
-    }
+    private static final int VISIBLE = 8;
 
     public static void handleClick(InventoryScreen screen, int mouseX, int mouseY, List<ItemEntity> items) {
 
-        int startX = screen.getGuiLeft() + 185;
-        int startY = screen.getGuiTop() + 38;
-        int barX = startX + 130;
-        int barHeight = 100;
+        Minecraft mc = Minecraft.getInstance();
+        OverlayRenderer.Layout l = OverlayRenderer.getLayout(mc, screen);
 
-        if (mouseX >= barX && mouseX <= barX + 6 &&
-            mouseY >= startY && mouseY <= startY + barHeight) {
+        if (mouseX >= l.scrollbarX && mouseX <= l.scrollbarX + l.scrollbarW &&
+            mouseY >= l.scrollbarY && mouseY <= l.scrollbarY + l.scrollbarH) {
 
             draggingScroll = true;
-            updateScrollFromMouse(mouseY, startY, barHeight, items.size());
+            updateScrollFromMouse(mouseY, l, items.size());
             return;
         }
 
@@ -75,9 +38,9 @@ public class OverlayState {
             int index = i + scrollTarget;
             if (index >= items.size()) break;
 
-            int rowY = startY + 4 + i * 18;
+            int rowY = l.listY + 4 + i * 18;
 
-            if (inside(mouseX, mouseY, startX, rowY, 140, 16)) {
+            if (inside(mouseX, mouseY, l.listX, rowY, l.listW, 16)) {
 
                 ItemEntity entity = items.get(index);
 
@@ -89,12 +52,13 @@ public class OverlayState {
     }
 
     public static void handleDrag(InventoryScreen screen, int mouseY, int size) {
+
         if (!draggingScroll) return;
 
-        int startY = screen.getGuiTop() + 38;
-        int barHeight = 100;
+        Minecraft mc = Minecraft.getInstance();
+        OverlayRenderer.Layout l = OverlayRenderer.getLayout(mc, screen);
 
-        updateScrollFromMouse(mouseY, startY, barHeight, size);
+        updateScrollFromMouse(mouseY, l, size);
     }
 
     public static MoveItemPacket handleRelease(InventoryScreen screen, int mouseX, int mouseY) {
@@ -149,19 +113,47 @@ public class OverlayState {
         return mx >= x && mx <= x + w && my >= y && my <= y + h;
     }
 
-    private static void updateScrollFromMouse(int mouseY, int barY, int barHeight, int size) {
+    private static void updateScrollFromMouse(int mouseY, OverlayRenderer.Layout l, int size) {
+
+        int max = Math.max(0, size - VISIBLE);
+        if (max == 0) return;
+
+        float percent = (float)(mouseY - l.scrollbarY) / l.scrollbarH;
+        percent = Math.max(0f, Math.min(1f, percent));
+
+        scrollTarget = (int)(percent * max);
+    }
+
+    public static void handleScroll(double delta, int size) {
+
+        int max = Math.max(0, size - VISIBLE);
+        if (max == 0) return;
+
+        if (delta > 0) scrollTarget--;
+        else scrollTarget++;
+
+        scrollTarget = Math.max(0, Math.min(scrollTarget, max));
+    }
+
+    public static void updateScroll(int size) {
 
         int max = Math.max(0, size - VISIBLE);
 
         if (max == 0) {
             scrollTarget = 0;
+            scrollCurrent = 0f;
             return;
         }
 
-        float percent = (float)(mouseY - barY) / barHeight;
-        percent = Math.max(0f, Math.min(1f, percent));
+        scrollTarget = Math.max(0, Math.min(scrollTarget, max));
 
-        scrollTarget = (int)(percent * max);
+        scrollCurrent += (scrollTarget - scrollCurrent) * 0.25f;
+
+        if (Math.abs(scrollCurrent - scrollTarget) < 0.01f) {
+            scrollCurrent = scrollTarget;
+        }
+
+        scrollCurrent = Math.max(0f, Math.min(scrollCurrent, max));
     }
 
     private static void clear() {
@@ -182,11 +174,14 @@ public class OverlayState {
     }
 
     public static boolean isDraggingScroll() {
-    return draggingScroll;
+        return draggingScroll;
     }
 
     public static boolean isInteracting() {
         return draggingScroll || !draggedStack.isEmpty();
     }
-    
+
+    public static int getVisibleCount() {
+    return VISIBLE;
+    }
 }
