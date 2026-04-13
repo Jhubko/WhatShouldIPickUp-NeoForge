@@ -44,7 +44,6 @@ public class OverlayRenderer {
         return l;
     }
 
-    // 🔥 JEDNO ŹRÓDŁO PRAWDY
     public static int getVisibleCount(Layout l) {
         return l.listW / SLOT_SIZE;
     }
