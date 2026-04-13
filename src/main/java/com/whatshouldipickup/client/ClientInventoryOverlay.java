@@ -88,7 +88,7 @@ public class ClientInventoryOverlay {
 
         OverlayState.handleDrag(
                 screen,
-                (int) event.getMouseY(),
+                (int) event.getMouseX(),
                 cachedItems.size()
         );
 

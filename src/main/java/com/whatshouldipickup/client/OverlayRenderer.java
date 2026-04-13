@@ -10,15 +10,13 @@ import java.util.List;
 
 public class OverlayRenderer {
 
-    private static final int VISIBLE = OverlayState.getVisibleCount();
-    private static float marqueeOffset = 0;
+    private static final int SLOT_SIZE = 18;
 
     public static class Layout {
         public int startX, startY;
         public int listX, listY;
         public int listW, listH;
-        public int scrollbarX, scrollbarY, scrollbarH;
-        public int scrollbarW = 10;
+        public int scrollbarX, scrollbarY, scrollbarW, scrollbarH;
     }
 
     public static Layout getLayout(Minecraft mc, InventoryScreen screen) {
@@ -26,39 +24,39 @@ public class OverlayRenderer {
         int x = screen.getGuiLeft();
         int y = screen.getGuiTop();
 
-        int startX = x + 185;
-        int startY = y + 15;
-
-        int panelHeight = 150;
-
-        int screenW = mc.getWindow().getGuiScaledWidth();
-        int guiRight = x + 176;
-
-        int availableWidth = screenW - guiRight - 15;
-
-        int baseWidth = 150;
-        int panelWidth = Math.min(baseWidth, availableWidth);
-        panelWidth = Math.max(100, panelWidth);
-
-        int listW = panelWidth - 10;
-        int listH = panelHeight;
-
         Layout l = new Layout();
 
-        l.startX = startX;
-        l.startY = startY;
+        l.startX = x;
+        l.startY = y + 166 + 4;
 
-        l.listX = startX;
-        l.listY = startY;
+        l.listX = l.startX;
+        l.listY = l.startY + 12;
 
-        l.listW = listW;
-        l.listH = listH;
+        l.listW = 176;
+        l.listH = 20;
 
-        l.scrollbarX = startX + listW;
-        l.scrollbarY = startY;
-        l.scrollbarH = panelHeight - 20;
+        l.scrollbarX = l.startX;
+        l.scrollbarY = l.startY + 32;
+
+        l.scrollbarW = 176;
+        l.scrollbarH = 6;
 
         return l;
+    }
+
+    // 🔥 JEDNO ŹRÓDŁO PRAWDY
+    public static int getVisibleCount(Layout l) {
+        return l.listW / SLOT_SIZE;
+    }
+
+    public static int getOffsetX(Layout l) {
+        int visible = getVisibleCount(l);
+        int totalWidth = visible * SLOT_SIZE;
+        return (l.listW - totalWidth) / 2;
+    }
+
+    public static int getItemX(Layout l, int index) {
+        return l.listX + getOffsetX(l) + index * SLOT_SIZE;
     }
 
     public static void render(GuiGraphics g, InventoryScreen screen, List<ItemEntity> items) {
@@ -66,92 +64,57 @@ public class OverlayRenderer {
         Minecraft mc = Minecraft.getInstance();
         Layout l = getLayout(mc, screen);
 
-        marqueeOffset += 0.6f;
-
-        g.fill(l.startX - 5, l.startY - 15,
-                l.startX + l.listW + l.scrollbarW,
-                l.startY + l.listH,
+        g.fill(l.startX, l.startY,
+                l.startX + l.listW,
+                l.startY + 40,
                 0xAA000000);
 
-        g.drawString(mc.font, "Nearby Items", l.startX, l.startY - 10, 0xFFFFFF);
+        g.drawString(mc.font, "Nearby Items", l.startX + 2, l.startY + 2, 0xFFFFFF);
 
         int scroll = OverlayState.getScrollIndex();
         int hoveredIndex = -1;
 
-        for (int i = 0; i < VISIBLE; i++) {
+        int visible = getVisibleCount(l);
+
+        for (int i = 0; i < visible; i++) {
 
             int index = i + scroll;
             if (index >= items.size()) break;
 
-            ItemEntity entity = items.get(index);
-            ItemStack stack = entity.getItem();
+            ItemStack stack = items.get(index).getItem();
 
-            int rowY = l.listY + 4 + i * 18;
+            int x = getItemX(l, i);
+            int y = l.listY;
 
-            g.renderItem(stack, l.listX, rowY);
+            g.renderItem(stack, x, y);
 
             if (stack.getCount() > 1) {
+
+                String count = String.valueOf(stack.getCount());
+
                 g.pose().pushPose();
-                g.pose().translate(0, 0, 200);
-                g.drawString(mc.font, String.valueOf(stack.getCount()),
-                        l.listX + 14, rowY + 9, 0xFFFFFF);
+                g.pose().translate(0, 0, 300);
+
+                int textX = x + 16 - mc.font.width(count);
+                int textY = y + 8;
+
+                g.drawString(mc.font, count, textX, textY, 0xFFFFFF);
+
                 g.pose().popPose();
             }
 
-            String name = stack.getHoverName().getString();
-
-            int textX = l.listX + 18 + (stack.getCount() > 1 ? 10 : 0);
-            int textY = rowY + 4;
-
-            int textWidth = mc.font.width(name);
-
-            g.pose().pushPose();
-
-            int leftClip = 18 + (stack.getCount() > 1 ? 10 : 0);
-
-            g.enableScissor(
-                    l.listX + leftClip,
-                    l.listY,
-                    l.listX + l.listW,
-                    l.listY + l.listH
-            );
-
-            int available = l.listW - (textX - l.listX);
-
-            if (textWidth <= available) {
-                g.drawString(mc.font, name, textX, textY, 0xFFFFFF);
-            } else {
-                int gap = 40;
-                float cycle = textWidth + gap;
-
-                float offset = marqueeOffset % cycle;
-
-                g.drawString(mc.font, name, (int)(textX - offset), textY, 0xFFFFFF);
-                g.drawString(mc.font, name, (int)(textX - offset + cycle), textY, 0xFFFFFF);
-            }
-
-            g.disableScissor();
-            g.pose().popPose();
-
-            if (isMouseOverRow(l, rowY, 16, mc)) {
+            if (isMouseOver(x, y, 16, 16, mc)) {
                 hoveredIndex = index;
             }
         }
 
-        renderScrollbar(g, l, items.size());
+        renderScrollbar(g, l, items.size(), visible);
         renderDraggedItem(g);
 
-        int mouseX = (int) (mc.mouseHandler.xpos()
-                * mc.getWindow().getGuiScaledWidth()
-                / mc.getWindow().getScreenWidth());
+        int mouseX = getMouseX(mc);
+        int mouseY = getMouseY(mc);
 
-        int mouseY = (int) (mc.mouseHandler.ypos()
-                * mc.getWindow().getGuiScaledHeight()
-                / mc.getWindow().getScreenHeight());
-
-        if (!isMouseOverScrollbar(mouseX, mouseY, l)
-                && hoveredIndex != -1
-                && hoveredIndex < items.size()) {
+        if (hoveredIndex != -1 && hoveredIndex < items.size()) {
 
             ItemStack hoveredStack = items.get(hoveredIndex).getItem();
 
@@ -162,32 +125,14 @@ public class OverlayRenderer {
         }
     }
 
-    private static boolean isMouseOverRow(Layout l, int y, int h, Minecraft mc) {
-
-        int mx = (int) (mc.mouseHandler.xpos() * mc.getWindow().getGuiScaledWidth() / mc.getWindow().getScreenWidth());
-        int my = (int) (mc.mouseHandler.ypos() * mc.getWindow().getGuiScaledHeight() / mc.getWindow().getScreenHeight());
-
-        return mx >= l.listX && mx <= l.listX + l.listW &&
-               my >= y && my <= y + h;
-    }
-
-    private static boolean isMouseOverScrollbar(int mx, int my, Layout l) {
-
-        return mx >= l.scrollbarX && mx <= l.scrollbarX + l.scrollbarW &&
-               my >= l.scrollbarY && my <= l.scrollbarY + l.scrollbarH;
-    }
-
-    private static void renderScrollbar(GuiGraphics g, Layout l, int size) {
+    private static void renderScrollbar(GuiGraphics g, Layout l, int size, int visible) {
 
         g.fill(l.scrollbarX, l.scrollbarY,
                 l.scrollbarX + l.scrollbarW,
                 l.scrollbarY + l.scrollbarH,
                 0x66000000);
 
-        int total = size;
-        int visible = VISIBLE;
-
-        if (total <= visible) {
+        if (size <= visible) {
             g.fill(l.scrollbarX, l.scrollbarY,
                     l.scrollbarX + l.scrollbarW,
                     l.scrollbarY + l.scrollbarH,
@@ -195,19 +140,40 @@ public class OverlayRenderer {
             return;
         }
 
-        int max = total - visible;
+        int max = size - visible;
 
-        int thumbH = (int)((float) visible / total * l.scrollbarH);
-        thumbH = Math.max(12, thumbH);
+        int thumbW = (int)((float) visible / size * l.scrollbarW);
+        thumbW = Math.max(10, thumbW);
 
         float progress = OverlayState.getScrollCurrent() / max;
 
-        int thumbY = l.scrollbarY + (int)((l.scrollbarH - thumbH) * progress);
+        int thumbX = l.scrollbarX + (int)((l.scrollbarW - thumbW) * progress);
 
-        g.fill(l.scrollbarX, thumbY,
-                l.scrollbarX + l.scrollbarW,
-                thumbY + thumbH,
+        g.fill(thumbX, l.scrollbarY,
+                thumbX + thumbW,
+                l.scrollbarY + l.scrollbarH,
                 0xFFFFFFFF);
+    }
+
+    private static boolean isMouseOver(int x, int y, int w, int h, Minecraft mc) {
+
+        int mx = getMouseX(mc);
+        int my = getMouseY(mc);
+
+        return mx >= x && mx <= x + w &&
+               my >= y && my <= y + h;
+    }
+
+    private static int getMouseX(Minecraft mc) {
+        return (int)(mc.mouseHandler.xpos()
+                * mc.getWindow().getGuiScaledWidth()
+                / mc.getWindow().getScreenWidth());
+    }
+
+    private static int getMouseY(Minecraft mc) {
+        return (int)(mc.mouseHandler.ypos()
+                * mc.getWindow().getGuiScaledHeight()
+                / mc.getWindow().getScreenHeight());
     }
 
     private static void renderDraggedItem(GuiGraphics g) {
@@ -217,13 +183,8 @@ public class OverlayRenderer {
 
         Minecraft mc = Minecraft.getInstance();
 
-        int mouseX = (int) (mc.mouseHandler.xpos()
-                * mc.getWindow().getGuiScaledWidth()
-                / mc.getWindow().getScreenWidth());
-
-        int mouseY = (int) (mc.mouseHandler.ypos()
-                * mc.getWindow().getGuiScaledHeight()
-                / mc.getWindow().getScreenHeight());
+        int mouseX = getMouseX(mc);
+        int mouseY = getMouseY(mc);
 
         g.pose().pushPose();
         g.pose().translate(0, 0, 600);
