@@ -25,8 +25,12 @@ Have you ever broken a chest and ended up with hundreds of items scattered every
 
 ### Notes
 
-* This mod requires both client and server installation for full functionality
 * Designed to improve inventory management during high item drops (e.g. storage moves, farms)
+
+### Links
+
+https://modrinth.com/mod/what-should-i-pick-up
+https://www.curseforge.com/minecraft/mc-mods/what-should-i-pick-up
 
 ---
 
