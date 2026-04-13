@@ -30,6 +30,7 @@ Have you ever broken a chest and ended up with hundreds of items scattered every
 ### Links
 
 https://modrinth.com/mod/what-should-i-pick-up
+
 https://www.curseforge.com/minecraft/mc-mods/what-should-i-pick-up
 
 ---
