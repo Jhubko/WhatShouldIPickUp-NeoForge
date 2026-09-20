@@ -13,6 +13,7 @@ Have you ever broken a chest and ended up with hundreds of items scattered every
 * Lightweight and performance-friendly
 * Configurable item detection radius up to 5 blocks
 * Option to always show the nearby items bar
+* Option to disable automatic item pickup and pick up items only through the overlay
 
 ### Requirements
 
