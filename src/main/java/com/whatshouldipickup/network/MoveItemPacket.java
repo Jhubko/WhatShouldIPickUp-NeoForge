@@ -9,46 +9,89 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record MoveItemPacket(int entityId, int slot) implements CustomPacketPayload {
+public record MoveItemPacket(
+        int entityId,
+        int slot
+) implements CustomPacketPayload {
 
     public static final Type<MoveItemPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("whatshouldipickup", "move_item"));
+            new Type<>(
+                    ResourceLocation.fromNamespaceAndPath(
+                            "whatshouldipickup",
+                            "move_item"
+                    )
+            );
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
     }
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, MoveItemPacket> STREAM_CODEC =
+    public static final StreamCodec<
+            RegistryFriendlyByteBuf,
+            MoveItemPacket
+            > STREAM_CODEC =
             StreamCodec.of(
                     (buf, msg) -> {
                         buf.writeInt(msg.entityId());
                         buf.writeInt(msg.slot());
                     },
-                    buf -> new MoveItemPacket(buf.readInt(), buf.readInt())
+                    buf -> new MoveItemPacket(
+                            buf.readInt(),
+                            buf.readInt()
+                    )
             );
 
-    public static void handle(MoveItemPacket msg, IPayloadContext ctx) {
+    public static void handle(
+            MoveItemPacket msg,
+            IPayloadContext ctx
+    ) {
 
         ctx.enqueueWork(() -> {
 
-            if (!(ctx.player() instanceof ServerPlayer player)) return;
+            if (!(ctx.player() instanceof ServerPlayer player)) {
+                return;
+            }
 
-            var level = player.level();
+            var level =
+                    player.level();
 
-            var entity = level.getEntity(msg.entityId());
-            if (!(entity instanceof ItemEntity itemEntity)) return;
+            var entity =
+                    level.getEntity(
+                            msg.entityId()
+                    );
 
-            if (player.distanceToSqr(itemEntity) > 16) return;
+            if (!(entity instanceof ItemEntity itemEntity)) {
+                return;
+            }
 
-            int slot = msg.slot();
+            if (player.distanceToSqr(itemEntity) > 25.0) {
+                return;
+            }
 
-            if (slot < 0 || slot >= player.getInventory().items.size()) return;
+            int slot =
+                    msg.slot();
 
-            ItemStack worldStack = itemEntity.getItem().copy();
-            ItemStack existing = player.getInventory().getItem(slot);
+            if (slot < 0 ||
+                slot >= player.getInventory().items.size()) {
 
-            player.getInventory().setItem(slot, worldStack);
+                return;
+            }
+
+            ItemStack worldStack =
+                    itemEntity.getItem().copy();
+
+            if (worldStack.isEmpty()) {
+                return;
+            }
+
+            ItemStack existing =
+                    player.getInventory().getItem(slot);
+
+            player.getInventory().setItem(
+                    slot,
+                    worldStack
+            );
 
             if (!existing.isEmpty()) {
                 itemEntity.setItem(existing);

@@ -1,5 +1,7 @@
 package com.whatshouldipickup.client;
 
+import com.whatshouldipickup.config.ClientConfig;
+import com.whatshouldipickup.network.MoveItemPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -17,7 +19,7 @@ import java.util.List;
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientInventoryOverlay {
 
-    private static List<ItemEntity> cachedItems = new ArrayList<>();
+    private static final List<ItemEntity> cachedItems = new ArrayList<>();
 
     private static final int MAIN_INV_SIZE = 36;
 
@@ -28,18 +30,21 @@ public class ClientInventoryOverlay {
 
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
+
         if (player == null) return;
 
         Level level = player.level();
 
-        if (!isInventoryFull(player)) {
+        if (!ClientConfig.isAlwaysShow() && !isInventoryFull(player)) {
             cachedItems.clear();
             return;
         }
 
+        double radius = ClientConfig.getDetectionRadius();
+
         List<ItemEntity> freshItems = level.getEntitiesOfClass(
                 ItemEntity.class,
-                player.getBoundingBox().inflate(1.5)
+                player.getBoundingBox().inflate(radius)
         );
 
         cachedItems.clear();
@@ -49,16 +54,25 @@ public class ClientInventoryOverlay {
 
         OverlayState.updateScroll(cachedItems.size());
 
-        OverlayRenderer.render(event.getGuiGraphics(), screen, cachedItems);
+        OverlayRenderer.render(
+                event.getGuiGraphics(),
+                screen,
+                cachedItems
+        );
     }
 
     @SubscribeEvent
     public static void onScroll(ScreenEvent.MouseScrolled.Pre event) {
 
         if (!(event.getScreen() instanceof InventoryScreen)) return;
+
         if (cachedItems.isEmpty()) return;
 
-        OverlayState.handleScroll(event.getScrollDeltaY(), cachedItems.size());
+        OverlayState.handleScroll(
+                event.getScrollDeltaY(),
+                cachedItems.size()
+        );
+
         event.setCanceled(true);
     }
 
@@ -66,6 +80,7 @@ public class ClientInventoryOverlay {
     public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
 
         if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+
         if (cachedItems.isEmpty()) return;
 
         OverlayState.handleClick(
@@ -84,6 +99,7 @@ public class ClientInventoryOverlay {
     public static void onDrag(ScreenEvent.MouseDragged.Pre event) {
 
         if (!(event.getScreen() instanceof InventoryScreen screen)) return;
+
         if (cachedItems.isEmpty()) return;
 
         OverlayState.handleDrag(
@@ -102,7 +118,7 @@ public class ClientInventoryOverlay {
 
         if (!(event.getScreen() instanceof InventoryScreen screen)) return;
 
-        var packet = OverlayState.handleRelease(
+        MoveItemPacket packet = OverlayState.handleRelease(
                 screen,
                 (int) event.getMouseX(),
                 (int) event.getMouseY()

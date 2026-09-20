@@ -1,0 +1,6 @@
+{
+  "key.whatshouldipickup.open_config": "Otwórz ustawienia What Should I Pick Up",
+  "key.categories.whatshouldipickup": "What Should I Pick Up",
+  "config.whatshouldipickup.always_show": "Zawsze pokazuj pasek pobliskich przedmiotów",
+  "config.whatshouldipickup.detection_radius": "Promień wykrywania"
+}
