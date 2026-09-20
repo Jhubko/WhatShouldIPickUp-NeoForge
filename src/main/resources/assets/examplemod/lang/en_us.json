@@ -2,5 +2,6 @@
   "key.whatshouldipickup.open_config": "Open What Should I Pick Up settings",
   "key.categories.whatshouldipickup": "What Should I Pick Up",
   "config.whatshouldipickup.always_show": "Always show nearby items bar",
+  "config.whatshouldipickup.disable_auto_pickup": "Disable automatic item pickup",
   "config.whatshouldipickup.detection_radius": "Detection radius"
 }

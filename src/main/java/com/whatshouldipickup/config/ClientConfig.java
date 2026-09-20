@@ -7,6 +7,7 @@ public class ClientConfig {
     public static final ModConfigSpec SPEC;
 
     public static final ModConfigSpec.BooleanValue ALWAYS_SHOW;
+    public static final ModConfigSpec.BooleanValue DISABLE_AUTO_PICKUP;
     public static final ModConfigSpec.DoubleValue DETECTION_RADIUS;
 
     static {
@@ -18,6 +19,11 @@ public class ClientConfig {
                 .comment("Always show the nearby items bar when there are nearby items.")
                 .translation("config.whatshouldipickup.always_show")
                 .define("alwaysShow", false);
+
+        DISABLE_AUTO_PICKUP = builder
+                .comment("Prevent normal automatic item pickup.")
+                .translation("config.whatshouldipickup.disable_auto_pickup")
+                .define("disableAutoPickup", false);
 
         DETECTION_RADIUS = builder
                 .comment("Maximum distance in blocks at which nearby dropped items are detected.")
@@ -33,6 +39,10 @@ public class ClientConfig {
         return ALWAYS_SHOW.get();
     }
 
+    public static boolean isAutoPickupDisabled() {
+        return DISABLE_AUTO_PICKUP.get();
+    }
+
     public static double getDetectionRadius() {
         return DETECTION_RADIUS.get();
     }
@@ -40,6 +50,11 @@ public class ClientConfig {
     public static void setAlwaysShow(boolean value) {
         ALWAYS_SHOW.set(value);
         ALWAYS_SHOW.save();
+    }
+
+    public static void setAutoPickupDisabled(boolean value) {
+        DISABLE_AUTO_PICKUP.set(value);
+        DISABLE_AUTO_PICKUP.save();
     }
 
     public static void setDetectionRadius(double value) {
