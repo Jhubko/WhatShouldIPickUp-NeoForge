@@ -11,6 +11,8 @@ Have you ever broken a chest and ended up with hundreds of items scattered every
 * Scroll through large piles of items with ease
 * Works in multiplayer (server and client required)
 * Lightweight and performance-friendly
+* Configurable item detection radius up to 5 blocks
+* Option to always show the nearby items bar
 
 ### Requirements
 
